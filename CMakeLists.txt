@@ -8,6 +8,8 @@ include_directories(include)
 
 add_executable(scanner
     src/main.cpp
+    src/app/AppConfig.cpp
     src/app/Application.cpp
     src/cli/CommandLineParser.cpp
+    src/logging/Logger.cpp
 )
