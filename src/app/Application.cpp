@@ -2,7 +2,12 @@
 #include "cli/Command.h"
 #include "cli/CommandLineParser.h"
 #include <iostream>
-#include <stdexcept>
+
+Application::Application(AppConfig config, Logger& logger)
+    : m_config(std::move(config)), m_logger(logger) {
+    m_config.createRequiredDirectories();
+    m_logger.info("Scanner started");
+}
 
 int Application::run(int argc, char* argv[]) {
     CommandLineParser parser;
@@ -12,6 +17,8 @@ int Application::run(int argc, char* argv[]) {
         cmd = parser.parse(argc, argv);
     } catch (const std::invalid_argument& e) {
         std::cerr << "Error: " << e.what() << "\n";
+        std::string what = e.what();
+        m_logger.error("Invalid command: " + what.substr(0, what.find('\n')));
         return 1;
     }
 
