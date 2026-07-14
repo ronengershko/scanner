@@ -1,0 +1,6 @@
+build/
+scanner-data/
+
+.DS_Store
+*.o
+*.a
