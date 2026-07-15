@@ -1,5 +1,6 @@
 #pragma once
 #include "database/Database.h"
+#include "scan/FileMetadataProvider.h"
 #include <optional>
 #include <string>
 
@@ -19,6 +20,10 @@ public:
 
     std::optional<CacheRecord> lookup(const std::string& path) const;
     void upsert(const CacheRecord& record);
+
+    static bool isValidHit(const CacheRecord& record,
+                           const FileMetadata& meta,
+                           int64_t signatureVersion);
 
 private:
     Database& m_db;

@@ -62,3 +62,14 @@ void CacheRepository::upsert(const CacheRecord& record) {
     if (sqlite3_step(stmt.ptr) != SQLITE_DONE)
         throw std::runtime_error(sqlite3_errmsg(m_db.handle()));
 }
+
+bool CacheRepository::isValidHit(const CacheRecord& record,
+                                  const FileMetadata& meta,
+                                  int64_t signatureVersion) {
+    return record.verdict != "error" &&
+           record.deviceId         == static_cast<int64_t>(meta.deviceId) &&
+           record.inode             == static_cast<int64_t>(meta.inode) &&
+           record.size              == static_cast<int64_t>(meta.size) &&
+           record.modificationTime  == meta.modificationTime &&
+           record.signatureVersion  == signatureVersion;
+}
