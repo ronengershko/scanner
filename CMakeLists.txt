@@ -18,6 +18,8 @@ add_executable(scanner
     src/database/CacheRepository.cpp
     src/database/ExclusionRepository.cpp
     src/database/QuarantineRepository.cpp
+    src/scan/FileScanner.cpp
+    src/signatures/SignatureService.cpp
 )
 
 target_link_libraries(scanner sqlite3)
