@@ -14,6 +14,7 @@ public:
     void remove(int64_t id);
 
     std::vector<Signature> loadForScanning() const;
+    int64_t getVersion() const;
 
 private:
     SignatureRepository& m_repo;

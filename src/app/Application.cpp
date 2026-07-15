@@ -4,10 +4,11 @@
 #include <iostream>
 #include <stdexcept>
 
-Application::Application(AppConfig config, Logger& logger, Database& database,
-                         SignatureService& signatureService)
+Application::Application(AppConfig config, Logger& logger,
+                         ScanService& scanService, SignatureService& signatureService)
     : m_config(std::move(config)), m_logger(logger),
-      m_database(database), m_signatureService(signatureService) {
+      m_scanService(scanService), m_signatureService(signatureService)
+{
     m_config.createRequiredDirectories();
     m_logger.info("Scanner started");
 }
@@ -28,17 +29,13 @@ int Application::run(int argc, char* argv[]) {
     try {
         switch (cmd.type) {
             case CommandType::ScanPath:
-                std::cout << "Scan path command received: " << cmd.argument.value() << "\n";
-                break;
+                return m_scanService.scanPath(cmd.argument.value());
             case CommandType::ScanAll:
-                std::cout << "Scan all command received\n";
-                break;
+                return m_scanService.scanAll(m_config.fullScanRoot);
             case CommandType::Stop:
-                std::cout << "Stop command received\n";
-                break;
+                return m_scanService.requestStop();
             case CommandType::Resume:
-                std::cout << "Resume command received\n";
-                break;
+                return m_scanService.resume();
             case CommandType::SignatureList:
                 m_signatureService.list();
                 break;

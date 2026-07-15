@@ -95,3 +95,36 @@ void ScanSessionRepository::updateCheckpoint(int64_t id, const std::string& last
     if (sqlite3_step(stmt.ptr) != SQLITE_DONE)
         throw std::runtime_error(sqlite3_errmsg(m_db.handle()));
 }
+
+void ScanSessionRepository::updateCounters(int64_t id, int64_t scanned,
+                                           int64_t cacheHits, int64_t malicious,
+                                           int64_t errors) {
+    Stmt stmt;
+    check(sqlite3_prepare_v2(m_db.handle(),
+        "UPDATE scan_sessions SET scanned_files=?, cache_hits=?,"
+        " malicious_files=?, error_files=? WHERE id=?",
+        -1, &stmt.ptr, nullptr), m_db.handle());
+
+    sqlite3_bind_int64(stmt.ptr, 1, scanned);
+    sqlite3_bind_int64(stmt.ptr, 2, cacheHits);
+    sqlite3_bind_int64(stmt.ptr, 3, malicious);
+    sqlite3_bind_int64(stmt.ptr, 4, errors);
+    sqlite3_bind_int64(stmt.ptr, 5, id);
+
+    if (sqlite3_step(stmt.ptr) != SQLITE_DONE)
+        throw std::runtime_error(sqlite3_errmsg(m_db.handle()));
+}
+
+std::string ScanSessionRepository::getStatus(int64_t id) const {
+    Stmt stmt;
+    check(sqlite3_prepare_v2(m_db.handle(),
+        "SELECT status FROM scan_sessions WHERE id = ?",
+        -1, &stmt.ptr, nullptr), m_db.handle());
+
+    sqlite3_bind_int64(stmt.ptr, 1, id);
+
+    if (sqlite3_step(stmt.ptr) != SQLITE_ROW)
+        throw std::runtime_error("Session not found: " + std::to_string(id));
+
+    return reinterpret_cast<const char*>(sqlite3_column_text(stmt.ptr, 0));
+}

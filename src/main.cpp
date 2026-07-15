@@ -1,8 +1,14 @@
 #include "app/AppConfig.h"
 #include "app/Application.h"
+#include "database/CacheRepository.h"
 #include "database/Database.h"
+#include "database/ScanSessionRepository.h"
 #include "database/SignatureRepository.h"
 #include "logging/Logger.h"
+#include "scan/FileMetadataProvider.h"
+#include "scan/FileScanner.h"
+#include "scan/FileTraverser.h"
+#include "scan/ScanService.h"
 #include "signatures/SignatureService.h"
 #include <iostream>
 
@@ -13,10 +19,20 @@ int main(int argc, char* argv[]) {
         Database database(config.databasePath);
         database.initializeSchema();
 
-        SignatureRepository signatureRepo(database);
+        SignatureRepository  signatureRepo(database);
+        ScanSessionRepository sessionRepo(database);
+        CacheRepository      cacheRepo(database);
+
         SignatureService signatureService(signatureRepo, logger);
 
-        Application app(std::move(config), logger, database, signatureService);
+        FileTraverser        traverser;
+        FileScanner          scanner;
+        FileMetadataProvider metaProvider;
+
+        ScanService scanService(traverser, scanner, metaProvider,
+                                sessionRepo, signatureService, cacheRepo, logger);
+
+        Application app(std::move(config), logger, scanService, signatureService);
         return app.run(argc, argv);
     } catch (const std::exception& e) {
         std::cerr << "Fatal: " << e.what() << "\n";

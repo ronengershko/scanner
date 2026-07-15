@@ -22,6 +22,7 @@ add_executable(scanner
     src/scan/FileTraverser.cpp
     src/scan/FileMetadataProvider.cpp
     src/signatures/SignatureService.cpp
+    src/scan/ScanService.cpp
 )
 
 target_link_libraries(scanner sqlite3)
