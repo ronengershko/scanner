@@ -101,8 +101,12 @@ void ScanSessionRepository::updateCounters(int64_t id, int64_t scanned,
                                            int64_t errors) {
     Stmt stmt;
     check(sqlite3_prepare_v2(m_db.handle(),
-        "UPDATE scan_sessions SET scanned_files=?, cache_hits=?,"
-        " malicious_files=?, error_files=? WHERE id=?",
+        "UPDATE scan_sessions"
+        " SET scanned_files  = scanned_files  + ?,"
+        "     cache_hits     = cache_hits     + ?,"
+        "     malicious_files= malicious_files+ ?,"
+        "     error_files    = error_files    + ?"
+        " WHERE id = ?",
         -1, &stmt.ptr, nullptr), m_db.handle());
 
     sqlite3_bind_int64(stmt.ptr, 1, scanned);
