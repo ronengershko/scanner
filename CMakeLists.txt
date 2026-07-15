@@ -19,7 +19,15 @@ add_executable(scanner
     src/database/ExclusionRepository.cpp
     src/database/QuarantineRepository.cpp
     src/scan/FileScanner.cpp
+    src/scan/FileTraverser.cpp
+    src/scan/FileMetadataProvider.cpp
     src/signatures/SignatureService.cpp
 )
 
 target_link_libraries(scanner sqlite3)
+
+add_executable(test_traverser
+    tests/test_traverser.cpp
+    src/scan/FileTraverser.cpp
+    src/scan/FileMetadataProvider.cpp
+)
