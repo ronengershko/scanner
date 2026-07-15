@@ -41,6 +41,10 @@ void SignatureService::remove(int64_t id) {
     std::cout << "Signature " << id << " removed.\n";
 }
 
+int64_t SignatureService::getVersion() const {
+    return m_repo.getVersion();
+}
+
 std::vector<Signature> SignatureService::loadForScanning() const {
     auto records = m_repo.loadAll();
     std::vector<Signature> result;
