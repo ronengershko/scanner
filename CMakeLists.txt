@@ -23,6 +23,7 @@ add_executable(scanner
     src/scan/FileMetadataProvider.cpp
     src/signatures/SignatureService.cpp
     src/scan/ScanService.cpp
+    src/quarantine/QuarantineService.cpp
 )
 
 target_link_libraries(scanner sqlite3)

@@ -29,10 +29,12 @@ ScanService::ScanService(FileTraverser& traverser, FileScanner& scanner,
                          ScanSessionRepository& sessionRepo,
                          SignatureService& signatureService,
                          CacheRepository& cacheRepo,
+                         QuarantineService& quarantineService,
                          Logger& logger)
     : m_traverser(traverser), m_scanner(scanner), m_metaProvider(metaProvider),
       m_sessionRepo(sessionRepo), m_signatureService(signatureService),
-      m_cacheRepo(cacheRepo), m_logger(logger) {}
+      m_cacheRepo(cacheRepo), m_quarantineService(quarantineService),
+      m_logger(logger) {}
 
 void ScanService::processFile(const fs::path& file,
                                const std::vector<Signature>& sigs,
@@ -55,6 +57,16 @@ void ScanService::processFile(const fs::path& file,
     auto cached = m_cacheRepo.lookup(pathStr);
     if (cached && CacheRepository::isValidHit(*cached, meta, sigVersion)) {
         counters.cacheHits++;
+        if (cached->verdict == "malicious") {
+            counters.malicious++;
+            m_logger.warning("Malicious (cached): " + pathStr);
+            std::cout << "MALICIOUS: " << pathStr << "\n";
+            try {
+                m_quarantineService.quarantine(file, meta, std::nullopt);
+            } catch (const std::exception& e) {
+                m_logger.error("Quarantine failed: " + pathStr + ": " + e.what());
+            }
+        }
         m_sessionRepo.updateCheckpoint(sessionId, pathStr);
         return;
     }
@@ -99,6 +111,11 @@ void ScanService::processFile(const fs::path& file,
             counters.malicious++;
             m_logger.warning("Malicious: " + pathStr);
             std::cout << "MALICIOUS: " << pathStr << "\n";
+            try {
+                m_quarantineService.quarantine(file, meta, result.matchedSignatureId);
+            } catch (const std::exception& e) {
+                m_logger.error("Quarantine failed: " + pathStr + ": " + e.what());
+            }
         }
     }
 

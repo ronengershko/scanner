@@ -2,6 +2,7 @@
 #include "database/CacheRepository.h"
 #include "database/ScanSessionRepository.h"
 #include "logging/Logger.h"
+#include "quarantine/QuarantineService.h"
 #include "scan/FileMetadataProvider.h"
 #include "scan/FileScanner.h"
 #include "scan/FileTraverser.h"
@@ -17,6 +18,7 @@ public:
                 ScanSessionRepository& sessionRepo,
                 SignatureService& signatureService,
                 CacheRepository& cacheRepo,
+                QuarantineService& quarantineService,
                 Logger& logger);
 
     int scanPath(const std::filesystem::path& path);
@@ -43,5 +45,6 @@ private:
     ScanSessionRepository& m_sessionRepo;
     SignatureService&      m_signatureService;
     CacheRepository&       m_cacheRepo;
+    QuarantineService&     m_quarantineService;
     Logger&                m_logger;
 };
