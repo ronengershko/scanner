@@ -31,3 +31,11 @@ add_executable(test_traverser
     src/scan/FileTraverser.cpp
     src/scan/FileMetadataProvider.cpp
 )
+
+add_executable(test_cache
+    tests/test_cache.cpp
+    src/database/Database.cpp
+    src/database/CacheRepository.cpp
+    src/scan/FileMetadataProvider.cpp
+)
+target_link_libraries(test_cache sqlite3)
