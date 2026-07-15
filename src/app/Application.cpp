@@ -5,9 +5,11 @@
 #include <stdexcept>
 
 Application::Application(AppConfig config, Logger& logger,
-                         ScanService& scanService, SignatureService& signatureService)
+                         ScanService& scanService, SignatureService& signatureService,
+                         QuarantineService& quarantineService)
     : m_config(std::move(config)), m_logger(logger),
-      m_scanService(scanService), m_signatureService(signatureService)
+      m_scanService(scanService), m_signatureService(signatureService),
+      m_quarantineService(quarantineService)
 {
     m_config.createRequiredDirectories();
     m_logger.info("Scanner started");
@@ -36,6 +38,7 @@ int Application::run(int argc, char* argv[]) {
                 return m_scanService.requestStop();
             case CommandType::Resume:
                 return m_scanService.resume();
+
             case CommandType::SignatureList:
                 m_signatureService.list();
                 break;
@@ -45,23 +48,27 @@ int Application::run(int argc, char* argv[]) {
             case CommandType::SignatureRemove:
                 m_signatureService.remove(std::stoll(cmd.argument.value()));
                 break;
+
             case CommandType::ExclusionList:
                 std::cout << "Exclusion list command received\n";
                 break;
             case CommandType::ExclusionAdd:
-                std::cout << "Exclusion add command received: " << cmd.argument.value() << "\n";
+                std::cout << "Exclusion add: " << cmd.argument.value() << "\n";
                 break;
             case CommandType::ExclusionRemove:
-                std::cout << "Exclusion remove command received: " << cmd.argument.value() << "\n";
+                std::cout << "Exclusion remove: " << cmd.argument.value() << "\n";
                 break;
+
             case CommandType::QuarantineList:
-                std::cout << "Quarantine list command received\n";
+                m_quarantineService.list();
                 break;
             case CommandType::QuarantineRestore:
-                std::cout << "Quarantine restore command received: " << cmd.argument.value() << "\n";
+                m_quarantineService.restore(cmd.argument.value());
+                std::cout << "Restored.\n";
                 break;
             case CommandType::QuarantineDelete:
-                std::cout << "Quarantine delete command received: " << cmd.argument.value() << "\n";
+                m_quarantineService.remove(cmd.argument.value());
+                std::cout << "Deleted.\n";
                 break;
         }
     } catch (const std::exception& e) {
