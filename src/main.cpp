@@ -1,7 +1,9 @@
 #include "app/AppConfig.h"
 #include "app/Application.h"
 #include "database/Database.h"
+#include "database/SignatureRepository.h"
 #include "logging/Logger.h"
+#include "signatures/SignatureService.h"
 #include <iostream>
 
 int main(int argc, char* argv[]) {
@@ -10,7 +12,11 @@ int main(int argc, char* argv[]) {
         Logger logger(config.logPath);
         Database database(config.databasePath);
         database.initializeSchema();
-        Application app(std::move(config), logger, database);
+
+        SignatureRepository signatureRepo(database);
+        SignatureService signatureService(signatureRepo, logger);
+
+        Application app(std::move(config), logger, database, signatureService);
         return app.run(argc, argv);
     } catch (const std::exception& e) {
         std::cerr << "Fatal: " << e.what() << "\n";
