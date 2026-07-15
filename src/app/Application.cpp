@@ -3,8 +3,8 @@
 #include "cli/CommandLineParser.h"
 #include <iostream>
 
-Application::Application(AppConfig config, Logger& logger)
-    : m_config(std::move(config)), m_logger(logger) {
+Application::Application(AppConfig config, Logger& logger, Database& database)
+    : m_config(std::move(config)), m_logger(logger), m_database(database) {
     m_config.createRequiredDirectories();
     m_logger.info("Scanner started");
 }
