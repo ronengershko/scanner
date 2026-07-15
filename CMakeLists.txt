@@ -12,4 +12,12 @@ add_executable(scanner
     src/app/Application.cpp
     src/cli/CommandLineParser.cpp
     src/logging/Logger.cpp
+    src/database/Database.cpp
+    src/database/SignatureRepository.cpp
+    src/database/ScanSessionRepository.cpp
+    src/database/CacheRepository.cpp
+    src/database/ExclusionRepository.cpp
+    src/database/QuarantineRepository.cpp
 )
+
+target_link_libraries(scanner sqlite3)
