@@ -35,33 +35,54 @@ std::vector<SignatureRecord> SignatureRepository::loadAll() const {
 }
 
 int64_t SignatureRepository::add(const std::string& value) {
-    Stmt stmt;
-    check(sqlite3_prepare_v2(m_db.handle(),
-        "INSERT INTO signatures (value, created_at) VALUES (?, ?)",
-        -1, &stmt.ptr, nullptr), m_db.handle());
+    m_db.beginTransaction();
+    try {
+        Stmt stmt;
+        check(sqlite3_prepare_v2(m_db.handle(),
+            "INSERT INTO signatures (value, created_at) VALUES (?, ?)",
+            -1, &stmt.ptr, nullptr), m_db.handle());
 
-    std::string ts = nowIso();
-    sqlite3_bind_text(stmt.ptr, 1, value.c_str(), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt.ptr, 2, ts.c_str(), -1, SQLITE_TRANSIENT);
+        std::string ts = nowIso();
+        sqlite3_bind_text(stmt.ptr, 1, value.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt.ptr, 2, ts.c_str(), -1, SQLITE_TRANSIENT);
 
-    int rc = sqlite3_step(stmt.ptr);
-    if (rc != SQLITE_DONE)
-        throw std::runtime_error(sqlite3_errmsg(m_db.handle()));
+        int rc = sqlite3_step(stmt.ptr);
+        if (rc == SQLITE_CONSTRAINT)
+            throw std::runtime_error("Signature already exists: " + value);
+        if (rc != SQLITE_DONE)
+            throw std::runtime_error(sqlite3_errmsg(m_db.handle()));
 
-    return sqlite3_last_insert_rowid(m_db.handle());
+        int64_t id = sqlite3_last_insert_rowid(m_db.handle());
+        incrementVersion();
+        m_db.commit();
+        return id;
+    } catch (...) {
+        m_db.rollback();
+        throw;
+    }
 }
 
 void SignatureRepository::remove(int64_t id) {
-    Stmt stmt;
-    check(sqlite3_prepare_v2(m_db.handle(),
-        "DELETE FROM signatures WHERE id = ?",
-        -1, &stmt.ptr, nullptr), m_db.handle());
+    m_db.beginTransaction();
+    try {
+        Stmt stmt;
+        check(sqlite3_prepare_v2(m_db.handle(),
+            "DELETE FROM signatures WHERE id = ?",
+            -1, &stmt.ptr, nullptr), m_db.handle());
 
-    sqlite3_bind_int64(stmt.ptr, 1, id);
+        sqlite3_bind_int64(stmt.ptr, 1, id);
 
-    int rc = sqlite3_step(stmt.ptr);
-    if (rc != SQLITE_DONE)
-        throw std::runtime_error(sqlite3_errmsg(m_db.handle()));
+        if (sqlite3_step(stmt.ptr) != SQLITE_DONE)
+            throw std::runtime_error(sqlite3_errmsg(m_db.handle()));
+        if (sqlite3_changes(m_db.handle()) == 0)
+            throw std::runtime_error("Signature not found: " + std::to_string(id));
+
+        incrementVersion();
+        m_db.commit();
+    } catch (...) {
+        m_db.rollback();
+        throw;
+    }
 }
 
 int64_t SignatureRepository::getVersion() const {
