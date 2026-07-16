@@ -17,8 +17,7 @@ AppConfig AppConfig::load() {
     return {
         dataRoot / "scanner.db",
         dataRoot / "scanner.log",
-        dataRoot / "quarantine",
-        projectRoot / "test-data"
+        dataRoot / "quarantine"
     };
 }
 

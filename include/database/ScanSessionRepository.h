@@ -29,6 +29,9 @@ public:
                         int64_t malicious, int64_t excluded, int64_t errors);
     std::string getStatus(int64_t id) const;
 
+    std::string getScanRoot() const;
+    void setScanRoot(const std::string& path);
+
 private:
     Database& m_db;
     std::optional<ScanSession> findByStatus(const std::string& status) const;

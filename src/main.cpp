@@ -18,7 +18,10 @@
 
 int main(int argc, char* argv[]) {
     try {
+        namespace fs = std::filesystem;
         AppConfig config = AppConfig::load();
+        config.createRequiredDirectories();
+
         Logger logger(config.logPath);
         Database database(config.databasePath);
         database.initializeSchema();
@@ -34,7 +37,6 @@ int main(int argc, char* argv[]) {
         ExclusionService  exclusionService(exclusionRepo, logger);
 
         // Ensure scanner-data is always excluded so the scanner never scans itself.
-        namespace fs = std::filesystem;
         std::string dataDirStr = fs::weakly_canonical(config.databasePath.parent_path()).string();
         bool dataDirExcluded = false;
         for (const auto& e : exclusionRepo.loadAll())
@@ -50,8 +52,15 @@ int main(int argc, char* argv[]) {
                                 sessionRepo, signatureService, cacheRepo,
                                 quarantineService, exclusionService, logger);
 
-        Application app(std::move(config), logger, scanService,
-                        signatureService, quarantineService, exclusionService);
+        // Seed default scan root (test-data/) on first run.
+        if (sessionRepo.getScanRoot().empty()) {
+            fs::path defaultRoot = fs::weakly_canonical(
+                fs::path(config.databasePath).parent_path().parent_path() / "test-data");
+            sessionRepo.setScanRoot(defaultRoot.string());
+        }
+
+        Application app(logger, scanService, signatureService,
+                        quarantineService, exclusionService);
         return app.run(argc, argv);
     } catch (const std::exception& e) {
         std::cerr << "Fatal: " << e.what() << "\n";
