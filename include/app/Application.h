@@ -1,5 +1,4 @@
 #pragma once
-#include "app/AppConfig.h"
 #include "exclusions/ExclusionService.h"
 #include "logging/Logger.h"
 #include "quarantine/QuarantineService.h"
@@ -8,14 +7,13 @@
 
 class Application {
 public:
-    Application(AppConfig config, Logger& logger,
+    Application(Logger& logger,
                 ScanService& scanService, SignatureService& signatureService,
                 QuarantineService& quarantineService,
                 ExclusionService& exclusionService);
     int run(int argc, char* argv[]);
 
 private:
-    AppConfig           m_config;
     Logger&             m_logger;
     ScanService&        m_scanService;
     SignatureService&   m_signatureService;

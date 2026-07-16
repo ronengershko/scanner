@@ -15,7 +15,8 @@ enum class CommandType {
     ExclusionRemove,
     QuarantineList,
     QuarantineRestore,
-    QuarantineDelete
+    QuarantineDelete,
+    ConfigSetRoot
 };
 
 struct Command {

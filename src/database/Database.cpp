@@ -8,6 +8,7 @@ Database::Database(const std::filesystem::path& path) {
         sqlite3_close(m_db);
         throw std::runtime_error("Cannot open database: " + msg);
     }
+    sqlite3_busy_timeout(m_db, 5000);
     execute("PRAGMA journal_mode=WAL");
     execute("PRAGMA foreign_keys=ON");
 }
@@ -49,6 +50,7 @@ void Database::initializeSchema() {
     )");
 
     execute("INSERT OR IGNORE INTO scanner_metadata (key, value) VALUES ('signature_version', '1')");
+    execute("INSERT OR IGNORE INTO scanner_metadata (key, value) VALUES ('scan_root', '')");
 
     execute(R"(
         CREATE TABLE IF NOT EXISTS file_cache (

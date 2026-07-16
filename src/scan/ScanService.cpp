@@ -199,8 +199,18 @@ int ScanService::scanPath(const fs::path& path) {
     return runScan(path, "path");
 }
 
-int ScanService::scanAll(const fs::path& fullScanRoot) {
-    return runScan(fullScanRoot, "all");
+int ScanService::scanAll() {
+    std::string root = m_sessionRepo.getScanRoot();
+    if (root.empty())
+        throw std::runtime_error("Scan root not set. Use 'scanner config set-root <path>'.");
+    return runScan(fs::path(root), "all");
+}
+
+void ScanService::setScanRoot(const fs::path& path) {
+    fs::path p = fs::weakly_canonical(path);
+    m_sessionRepo.setScanRoot(p.string());
+    m_logger.info("Scan root set to: " + p.string());
+    std::cout << "Scan root: " << p.string() << "\n";
 }
 
 int ScanService::requestStop() {
@@ -243,8 +253,8 @@ int ScanService::resume() {
     try {
         m_traverser.traverse(fs::path(session->canonicalPath), [&](const fs::path& file) -> bool {
             // Skip files already processed before the checkpoint
-            std::string filePath = fs::weakly_canonical(file).string();
-            if (!checkpoint.empty() && filePath <= checkpoint)
+            fs::path filePath = fs::weakly_canonical(file);
+            if (!checkpoint.empty() && filePath <= fs::path(checkpoint))
                 return true;
 
             if (m_sessionRepo.getStatus(sessionId) == "stop_requested") {

@@ -121,6 +121,26 @@ void ScanSessionRepository::updateCounters(int64_t id, int64_t scanned,
         throw std::runtime_error(sqlite3_errmsg(m_db.handle()));
 }
 
+std::string ScanSessionRepository::getScanRoot() const {
+    Stmt stmt;
+    check(sqlite3_prepare_v2(m_db.handle(),
+        "SELECT value FROM scanner_metadata WHERE key = 'scan_root'",
+        -1, &stmt.ptr, nullptr), m_db.handle());
+    if (sqlite3_step(stmt.ptr) != SQLITE_ROW)
+        return "";
+    return reinterpret_cast<const char*>(sqlite3_column_text(stmt.ptr, 0));
+}
+
+void ScanSessionRepository::setScanRoot(const std::string& path) {
+    Stmt stmt;
+    check(sqlite3_prepare_v2(m_db.handle(),
+        "INSERT OR REPLACE INTO scanner_metadata (key, value) VALUES ('scan_root', ?)",
+        -1, &stmt.ptr, nullptr), m_db.handle());
+    sqlite3_bind_text(stmt.ptr, 1, path.c_str(), -1, SQLITE_TRANSIENT);
+    if (sqlite3_step(stmt.ptr) != SQLITE_DONE)
+        throw std::runtime_error(sqlite3_errmsg(m_db.handle()));
+}
+
 std::string ScanSessionRepository::getStatus(int64_t id) const {
     Stmt stmt;
     check(sqlite3_prepare_v2(m_db.handle(),

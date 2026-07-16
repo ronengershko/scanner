@@ -24,9 +24,10 @@ public:
                 Logger& logger);
 
     int scanPath(const std::filesystem::path& path);
-    int scanAll(const std::filesystem::path& fullScanRoot);
+    int scanAll();
     int requestStop();
     int resume();
+    void setScanRoot(const std::filesystem::path& path);
 
 private:
     struct Counters {

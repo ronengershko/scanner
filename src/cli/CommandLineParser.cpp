@@ -16,7 +16,8 @@ static const char* USAGE =
     "  scanner exclusions remove <id>\n"
     "  scanner quarantine list\n"
     "  scanner quarantine restore <id>\n"
-    "  scanner quarantine delete <id>\n";
+    "  scanner quarantine delete <id>\n"
+    "  scanner config set-root <path>\n";
 
 Command CommandLineParser::parse(int argc, char* argv[]) const {
     if (argc < 2)
@@ -131,6 +132,20 @@ Command CommandLineParser::parse(int argc, char* argv[]) const {
             return {CommandType::QuarantineDelete, std::string(argv[3])};
         }
         throw std::invalid_argument(std::string("Unknown quarantine action: ") + action);
+    }
+
+    if (cmd == "config") {
+        if (argc < 3)
+            throw std::invalid_argument("'config' requires set-root.");
+        std::string action = argv[2];
+        if (action == "set-root") {
+            if (argc < 4)
+                throw std::invalid_argument("'config set-root' requires a path.");
+            if (argc > 4)
+                throw std::invalid_argument("'config set-root' takes exactly one path.");
+            return {CommandType::ConfigSetRoot, std::string(argv[3])};
+        }
+        throw std::invalid_argument(std::string("Unknown config action: ") + action);
     }
 
     throw std::invalid_argument(std::string("Unknown command: ") + cmd + "\n" + USAGE);

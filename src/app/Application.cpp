@@ -4,15 +4,14 @@
 #include <iostream>
 #include <stdexcept>
 
-Application::Application(AppConfig config, Logger& logger,
+Application::Application(Logger& logger,
                          ScanService& scanService, SignatureService& signatureService,
                          QuarantineService& quarantineService,
                          ExclusionService& exclusionService)
-    : m_config(std::move(config)), m_logger(logger),
+    : m_logger(logger),
       m_scanService(scanService), m_signatureService(signatureService),
       m_quarantineService(quarantineService), m_exclusionService(exclusionService)
 {
-    m_config.createRequiredDirectories();
     m_logger.info("Scanner started");
 }
 
@@ -34,7 +33,7 @@ int Application::run(int argc, char* argv[]) {
             case CommandType::ScanPath:
                 return m_scanService.scanPath(cmd.argument.value());
             case CommandType::ScanAll:
-                return m_scanService.scanAll(m_config.fullScanRoot);
+                return m_scanService.scanAll();
             case CommandType::Stop:
                 return m_scanService.requestStop();
             case CommandType::Resume:
@@ -70,6 +69,10 @@ int Application::run(int argc, char* argv[]) {
             case CommandType::QuarantineDelete:
                 m_quarantineService.remove(cmd.argument.value());
                 std::cout << "Deleted.\n";
+                break;
+
+            case CommandType::ConfigSetRoot:
+                m_scanService.setScanRoot(cmd.argument.value());
                 break;
         }
     } catch (const std::exception& e) {
