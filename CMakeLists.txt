@@ -24,6 +24,7 @@ add_executable(scanner
     src/signatures/SignatureService.cpp
     src/scan/ScanService.cpp
     src/quarantine/QuarantineService.cpp
+    src/exclusions/ExclusionService.cpp
 )
 
 target_link_libraries(scanner sqlite3)

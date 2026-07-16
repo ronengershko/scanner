@@ -1,5 +1,6 @@
 #include "scan/ScanService.h"
 #include "database/CacheRepository.h"
+#include "exclusions/ExclusionService.h"
 #include <chrono>
 #include <cstdlib>
 #include <filesystem>
@@ -30,11 +31,12 @@ ScanService::ScanService(FileTraverser& traverser, FileScanner& scanner,
                          SignatureService& signatureService,
                          CacheRepository& cacheRepo,
                          QuarantineService& quarantineService,
+                         ExclusionService& exclusionService,
                          Logger& logger)
     : m_traverser(traverser), m_scanner(scanner), m_metaProvider(metaProvider),
       m_sessionRepo(sessionRepo), m_signatureService(signatureService),
       m_cacheRepo(cacheRepo), m_quarantineService(quarantineService),
-      m_logger(logger) {}
+      m_exclusionService(exclusionService), m_logger(logger) {}
 
 void ScanService::processFile(const fs::path& file,
                                const std::vector<Signature>& sigs,
@@ -42,6 +44,9 @@ void ScanService::processFile(const fs::path& file,
                                int64_t sessionId,
                                Counters& counters)
 {
+    if (m_exclusionService.isExcluded(file))
+        return;
+
     FileMetadata meta;
     try {
         meta = m_metaProvider.read(file);
