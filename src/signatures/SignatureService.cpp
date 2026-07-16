@@ -29,14 +29,12 @@ void SignatureService::add(const std::string& value) {
         throw std::invalid_argument("Signature value cannot be empty.");
 
     int64_t id = m_repo.add(value);
-    m_repo.incrementVersion();
     m_logger.info("Signature added id=" + std::to_string(id) + " value=" + value);
     std::cout << "Signature added with id " << id << ".\n";
 }
 
 void SignatureService::remove(int64_t id) {
     m_repo.remove(id);
-    m_repo.incrementVersion();
     m_logger.info("Signature removed id=" + std::to_string(id));
     std::cout << "Signature " << id << " removed.\n";
 }

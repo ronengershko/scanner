@@ -30,7 +30,7 @@ public:
 
 private:
     struct Counters {
-        int64_t scanned{0}, cacheHits{0}, malicious{0}, errors{0};
+        int64_t scanned{0}, cacheHits{0}, malicious{0}, excluded{0}, errors{0};
     };
 
     int runScan(const std::filesystem::path& path, const std::string& scanType);

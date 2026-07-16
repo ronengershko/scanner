@@ -26,7 +26,7 @@ public:
     void updateStatus(int64_t id, const std::string& status);
     void updateCheckpoint(int64_t id, const std::string& lastCompletedPath);
     void updateCounters(int64_t id, int64_t scanned, int64_t cacheHits,
-                        int64_t malicious, int64_t errors);
+                        int64_t malicious, int64_t excluded, int64_t errors);
     std::string getStatus(int64_t id) const;
 
 private:

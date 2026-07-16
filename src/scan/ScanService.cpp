@@ -44,8 +44,10 @@ void ScanService::processFile(const fs::path& file,
                                int64_t sessionId,
                                Counters& counters)
 {
-    if (m_exclusionService.isExcluded(file))
+    if (m_exclusionService.isExcluded(file)) {
+        counters.excluded++;
         return;
+    }
 
     FileMetadata meta;
     try {
@@ -129,12 +131,13 @@ void ScanService::processFile(const fs::path& file,
 
 static void printSummary(bool stopped, const std::string& path,
                          int64_t scanned, int64_t cacheHits,
-                         int64_t malicious, int64_t errors, double elapsed) {
+                         int64_t malicious, int64_t excluded, int64_t errors, double elapsed) {
     std::cout << (stopped ? "Scan stopped" : "Scan completed") << "\n"
               << "Path: " << path << "\n"
               << "Files scanned: " << scanned << "\n"
               << "Cache hits: " << cacheHits << "\n"
               << "Malicious files: " << malicious << "\n"
+              << "Excluded files: " << excluded << "\n"
               << "Errors: " << errors << "\n"
               << "Duration: " << std::fixed << std::setprecision(1) << elapsed << " seconds\n";
 }
@@ -179,13 +182,13 @@ int ScanService::runScan(const fs::path& path, const std::string& scanType) {
     }
 
     m_sessionRepo.updateCounters(sessionId, counters.scanned, counters.cacheHits,
-                                 counters.malicious, counters.errors);
+                                 counters.malicious, counters.excluded, counters.errors);
 
     double elapsed = std::chrono::duration<double>(
         std::chrono::steady_clock::now() - startTime).count();
 
     printSummary(stopped, canonical.string(), counters.scanned, counters.cacheHits,
-                 counters.malicious, counters.errors, elapsed);
+                 counters.malicious, counters.excluded, counters.errors, elapsed);
     m_logger.info(std::string(stopped ? "Scan stopped" : "Scan completed") +
                   " scanned=" + std::to_string(counters.scanned) +
                   " malicious=" + std::to_string(counters.malicious));
@@ -265,13 +268,13 @@ int ScanService::resume() {
     }
 
     m_sessionRepo.updateCounters(sessionId, counters.scanned, counters.cacheHits,
-                                 counters.malicious, counters.errors);
+                                 counters.malicious, counters.excluded, counters.errors);
 
     double elapsed = std::chrono::duration<double>(
         std::chrono::steady_clock::now() - startTime).count();
 
     printSummary(stopped, session->canonicalPath, counters.scanned, counters.cacheHits,
-                 counters.malicious, counters.errors, elapsed);
+                 counters.malicious, counters.excluded, counters.errors, elapsed);
     m_logger.info(std::string(stopped ? "Scan stopped" : "Scan completed") +
                   " (resumed) scanned=" + std::to_string(counters.scanned));
     return 0;

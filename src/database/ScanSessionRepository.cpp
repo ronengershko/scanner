@@ -98,22 +98,24 @@ void ScanSessionRepository::updateCheckpoint(int64_t id, const std::string& last
 
 void ScanSessionRepository::updateCounters(int64_t id, int64_t scanned,
                                            int64_t cacheHits, int64_t malicious,
-                                           int64_t errors) {
+                                           int64_t excluded, int64_t errors) {
     Stmt stmt;
     check(sqlite3_prepare_v2(m_db.handle(),
         "UPDATE scan_sessions"
-        " SET scanned_files  = scanned_files  + ?,"
-        "     cache_hits     = cache_hits     + ?,"
-        "     malicious_files= malicious_files+ ?,"
-        "     error_files    = error_files    + ?"
+        " SET scanned_files   = scanned_files   + ?,"
+        "     cache_hits      = cache_hits      + ?,"
+        "     malicious_files = malicious_files + ?,"
+        "     excluded_files  = excluded_files  + ?,"
+        "     error_files     = error_files     + ?"
         " WHERE id = ?",
         -1, &stmt.ptr, nullptr), m_db.handle());
 
     sqlite3_bind_int64(stmt.ptr, 1, scanned);
     sqlite3_bind_int64(stmt.ptr, 2, cacheHits);
     sqlite3_bind_int64(stmt.ptr, 3, malicious);
-    sqlite3_bind_int64(stmt.ptr, 4, errors);
-    sqlite3_bind_int64(stmt.ptr, 5, id);
+    sqlite3_bind_int64(stmt.ptr, 4, excluded);
+    sqlite3_bind_int64(stmt.ptr, 5, errors);
+    sqlite3_bind_int64(stmt.ptr, 6, id);
 
     if (sqlite3_step(stmt.ptr) != SQLITE_DONE)
         throw std::runtime_error(sqlite3_errmsg(m_db.handle()));
