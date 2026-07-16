@@ -62,4 +62,6 @@ void ExclusionRepository::remove(int64_t id) {
 
     if (sqlite3_step(stmt.ptr) != SQLITE_DONE)
         throw std::runtime_error(sqlite3_errmsg(m_db.handle()));
+    if (sqlite3_changes(m_db.handle()) == 0)
+        throw std::runtime_error("Exclusion not found: " + std::to_string(id));
 }

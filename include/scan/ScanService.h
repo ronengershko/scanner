@@ -1,6 +1,7 @@
 #pragma once
 #include "database/CacheRepository.h"
 #include "database/ScanSessionRepository.h"
+#include "exclusions/ExclusionService.h"
 #include "logging/Logger.h"
 #include "quarantine/QuarantineService.h"
 #include "scan/FileMetadataProvider.h"
@@ -19,6 +20,7 @@ public:
                 SignatureService& signatureService,
                 CacheRepository& cacheRepo,
                 QuarantineService& quarantineService,
+                ExclusionService& exclusionService,
                 Logger& logger);
 
     int scanPath(const std::filesystem::path& path);
@@ -46,5 +48,6 @@ private:
     SignatureService&      m_signatureService;
     CacheRepository&       m_cacheRepo;
     QuarantineService&     m_quarantineService;
+    ExclusionService&      m_exclusionService;
     Logger&                m_logger;
 };

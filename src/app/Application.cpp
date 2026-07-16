@@ -6,10 +6,11 @@
 
 Application::Application(AppConfig config, Logger& logger,
                          ScanService& scanService, SignatureService& signatureService,
-                         QuarantineService& quarantineService)
+                         QuarantineService& quarantineService,
+                         ExclusionService& exclusionService)
     : m_config(std::move(config)), m_logger(logger),
       m_scanService(scanService), m_signatureService(signatureService),
-      m_quarantineService(quarantineService)
+      m_quarantineService(quarantineService), m_exclusionService(exclusionService)
 {
     m_config.createRequiredDirectories();
     m_logger.info("Scanner started");
@@ -50,13 +51,13 @@ int Application::run(int argc, char* argv[]) {
                 break;
 
             case CommandType::ExclusionList:
-                std::cout << "Exclusion list command received\n";
+                m_exclusionService.list();
                 break;
             case CommandType::ExclusionAdd:
-                std::cout << "Exclusion add: " << cmd.argument.value() << "\n";
+                m_exclusionService.add(cmd.argument.value());
                 break;
             case CommandType::ExclusionRemove:
-                std::cout << "Exclusion remove: " << cmd.argument.value() << "\n";
+                m_exclusionService.remove(std::stoll(cmd.argument.value()));
                 break;
 
             case CommandType::QuarantineList:
