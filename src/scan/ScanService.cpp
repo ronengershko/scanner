@@ -1,6 +1,7 @@
 #include "scan/ScanService.h"
 #include "database/CacheRepository.h"
 #include "exclusions/ExclusionService.h"
+#include "scan/FileWatcher.h"
 #include <chrono>
 #include <filesystem>
 #include <iomanip>
@@ -24,11 +25,13 @@ ScanService::ScanService(FileTraverser& traverser, FileScanner& scanner,
                          CacheRepository& cacheRepo,
                          QuarantineService& quarantineService,
                          ExclusionService& exclusionService,
+                         WatchPathRepository& watchPathRepo,
                          Logger& logger)
     : m_traverser(traverser), m_scanner(scanner), m_metaProvider(metaProvider),
       m_sessionRepo(sessionRepo), m_signatureService(signatureService),
       m_cacheRepo(cacheRepo), m_quarantineService(quarantineService),
-      m_exclusionService(exclusionService), m_logger(logger) {}
+      m_exclusionService(exclusionService), m_watchPathRepo(watchPathRepo),
+      m_logger(logger) {}
 
 
 void ScanService::processFile(const fs::path& file,
@@ -207,6 +210,55 @@ void ScanService::setScanRoot(const fs::path& path) {
     m_sessionRepo.setScanRoot(p.string());
     m_logger.info("Scan root set to: " + p.string());
     std::cout << "Scan root: " << p.string() << "\n";
+}
+
+
+void ScanService::watchAdd(const fs::path& path) {
+    fs::path p = fs::weakly_canonical(path);
+    m_watchPathRepo.add(p.string());
+    m_logger.info("Watch path added: " + p.string());
+    std::cout << "Watch path added: " << p.string() << "\n";
+}
+
+void ScanService::watchRemove(int64_t id) {
+    m_watchPathRepo.remove(id);
+    std::cout << "Watch path removed.\n";
+}
+
+void ScanService::watchList() {
+    auto paths = m_watchPathRepo.loadAll();
+    if (paths.empty()) {
+        std::cout << "No watch paths configured.\n";
+        return;
+    }
+    std::cout << "ID  Path\n";
+    for (const auto& wp : paths)
+        std::cout << wp.id << "   " << wp.path << "\n";
+}
+
+
+int ScanService::monitor() {
+    auto watchPaths = m_watchPathRepo.loadAll();
+    if (watchPaths.empty()) {
+        std::cerr << "No watch paths set. Use 'scanner watch add <path>'.\n";
+        return 1;
+    }
+
+    auto sigs = m_signatureService.loadForScanning();
+    int64_t sigVersion = m_signatureService.getVersion();
+    int64_t sessionId = m_sessionRepo.create("monitor", "monitor", "monitor");
+    Counters counters;
+    m_logger.info("Monitor started");
+
+    std::vector<std::string> paths;
+    for (const auto& wp : watchPaths)
+        paths.push_back(wp.path);
+
+    FileWatcher watcher(paths, [&](const std::string& path) {
+        processFile(fs::path(path), sigs, sigVersion, sessionId, counters);
+    });
+    watcher.start();
+    return 0;
 }
 
 

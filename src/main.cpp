@@ -6,6 +6,7 @@
 #include "database/QuarantineRepository.h"
 #include "database/ScanSessionRepository.h"
 #include "database/SignatureRepository.h"
+#include "database/WatchPathRepository.h"
 #include "exclusions/ExclusionService.h"
 #include "logging/Logger.h"
 #include "quarantine/QuarantineService.h"
@@ -30,6 +31,7 @@ int main(int argc, char* argv[]) {
         CacheRepository       cacheRepo(database);
         QuarantineRepository  quarantineRepo(database);
         ExclusionRepository   exclusionRepo(database);
+        WatchPathRepository   watchPathRepo(database);
 
         exclusionRepo.seedIfMissing(config.dataDirectory.string(), true);
 
@@ -43,7 +45,7 @@ int main(int argc, char* argv[]) {
 
         ScanService scanService(traverser, scanner, metaProvider,
                                 sessionRepo, signatureService, cacheRepo,
-                                quarantineService, exclusionService, logger);
+                                quarantineService, exclusionService, watchPathRepo, logger);
 
         Application app(logger, scanService, signatureService,
                         quarantineService, exclusionService);

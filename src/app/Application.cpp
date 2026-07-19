@@ -74,6 +74,17 @@ int Application::run(int argc, char* argv[]) {
             case CommandType::ConfigSetRoot:
                 m_scanService.setScanRoot(cmd.argument.value());
                 break;
+            case CommandType::WatchList:
+                m_scanService.watchList();
+                break;
+            case CommandType::WatchAdd:
+                m_scanService.watchAdd(cmd.argument.value());
+                break;
+            case CommandType::WatchRemove:
+                m_scanService.watchRemove(std::stoll(cmd.argument.value()));
+                break;
+            case CommandType::Monitor:
+                return m_scanService.monitor();
         }
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << "\n";

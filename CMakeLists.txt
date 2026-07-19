@@ -29,15 +29,17 @@ add_library(scanner_lib
     src/database/CacheRepository.cpp
     src/database/ExclusionRepository.cpp
     src/database/QuarantineRepository.cpp
+    src/database/WatchPathRepository.cpp
     src/scan/FileScanner.cpp
     src/scan/FileTraverser.cpp
     src/scan/FileMetadataProvider.cpp
+    src/scan/FileWatcher.cpp
     src/signatures/SignatureService.cpp
     src/scan/ScanService.cpp
     src/quarantine/QuarantineService.cpp
     src/exclusions/ExclusionService.cpp
 )
-target_link_libraries(scanner_lib sqlite3)
+target_link_libraries(scanner_lib sqlite3 "-framework CoreServices")
 
 # ── Main executable ───────────────────────────────────────────────────────────
 add_executable(scanner src/main.cpp)

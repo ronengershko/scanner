@@ -127,6 +127,7 @@ void ScanSessionRepository::setScanRoot(const std::string& path) {
         throw std::runtime_error(sqlite3_errmsg(m_db.handle()));
 }
 
+
 std::string ScanSessionRepository::getStatus(int64_t id) const {
     Stmt stmt;
     check(sqlite3_prepare_v2(m_db.handle(),

@@ -17,7 +17,11 @@ static const char* USAGE =
     "  scanner quarantine list\n"
     "  scanner quarantine restore <id>\n"
     "  scanner quarantine delete <id>\n"
-    "  scanner config set-root <path>\n";
+    "  scanner config set-root <path>\n"
+    "  scanner watch list\n"
+    "  scanner watch add <path>\n"
+    "  scanner watch remove <id>\n"
+    "  scanner monitor\n";
 
 Command CommandLineParser::parse(int argc, char* argv[]) const {
     if (argc < 2)
@@ -132,6 +136,38 @@ Command CommandLineParser::parse(int argc, char* argv[]) const {
             return {CommandType::QuarantineDelete, std::string(argv[3])};
         }
         throw std::invalid_argument(std::string("Unknown quarantine action: ") + action);
+    }
+
+    if (cmd == "monitor") {
+        if (argc != 2)
+            throw std::invalid_argument("'monitor' takes no arguments.");
+        return {CommandType::Monitor, std::nullopt};
+    }
+
+    if (cmd == "watch") {
+        if (argc < 3)
+            throw std::invalid_argument("'watch' requires list, add, or remove.");
+        std::string action = argv[2];
+        if (action == "list") {
+            if (argc != 3)
+                throw std::invalid_argument("'watch list' takes no arguments.");
+            return {CommandType::WatchList, std::nullopt};
+        }
+        if (action == "add") {
+            if (argc < 4)
+                throw std::invalid_argument("'watch add' requires a path.");
+            if (argc > 4)
+                throw std::invalid_argument("'watch add' takes exactly one path.");
+            return {CommandType::WatchAdd, std::string(argv[3])};
+        }
+        if (action == "remove") {
+            if (argc < 4)
+                throw std::invalid_argument("'watch remove' requires an id.");
+            if (argc > 4)
+                throw std::invalid_argument("'watch remove' takes exactly one id.");
+            return {CommandType::WatchRemove, std::string(argv[3])};
+        }
+        throw std::invalid_argument(std::string("Unknown watch action: ") + action);
     }
 
     if (cmd == "config") {

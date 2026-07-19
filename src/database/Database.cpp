@@ -96,6 +96,14 @@ void Database::initializeSchema() {
     )");
 
     execute(R"(
+        CREATE TABLE IF NOT EXISTS watch_paths (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            path TEXT NOT NULL UNIQUE,
+            created_at TEXT NOT NULL
+        )
+    )");
+
+    execute(R"(
         CREATE TABLE IF NOT EXISTS quarantine_items (
             id TEXT PRIMARY KEY,
             quarantine_path TEXT NOT NULL UNIQUE,
