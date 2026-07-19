@@ -3,10 +3,12 @@
 #include "exclusions/ExclusionService.h"
 #include "scan/FileWatcher.h"
 #include <chrono>
+#include <csignal>
 #include <filesystem>
 #include <iomanip>
 #include <iostream>
 #include <stdexcept>
+#include <unistd.h>
 
 namespace fs = std::filesystem;
 
@@ -218,11 +220,19 @@ void ScanService::watchAdd(const fs::path& path) {
     m_watchPathRepo.add(p.string());
     m_logger.info("Watch path added: " + p.string());
     std::cout << "Watch path added: " << p.string() << "\n";
+    notifyMonitor();
 }
 
 void ScanService::watchRemove(int64_t id) {
     m_watchPathRepo.remove(id);
     std::cout << "Watch path removed.\n";
+    notifyMonitor();
+}
+
+void ScanService::notifyMonitor() {
+    int64_t pid = m_sessionRepo.getMonitorPid();
+    if (pid > 0 && kill(static_cast<pid_t>(pid), SIGUSR1) == 0)
+        std::cout << "Monitor reloaded.\n";
 }
 
 void ScanService::watchList() {
@@ -238,27 +248,32 @@ void ScanService::watchList() {
 
 
 int ScanService::monitor() {
-    auto watchPaths = m_watchPathRepo.loadAll();
-    if (watchPaths.empty()) {
-        std::cerr << "No watch paths set. Use 'scanner watch add <path>'.\n";
-        return 1;
-    }
+    m_sessionRepo.setMonitorPid(static_cast<int64_t>(getpid()));
+    m_logger.info("Monitor started pid=" + std::to_string(getpid()));
 
     auto sigs = m_signatureService.loadForScanning();
     int64_t sigVersion = m_signatureService.getVersion();
     int64_t sessionId = m_sessionRepo.create("monitor", "monitor", "monitor");
     Counters counters;
-    m_logger.info("Monitor started");
 
-    std::vector<std::string> paths;
-    for (const auto& wp : watchPaths)
-        paths.push_back(wp.path);
+    while (true) {
+        auto watchPaths = m_watchPathRepo.loadAll();
+        if (watchPaths.empty()) {
+            std::cerr << "No watch paths set. Use 'scanner watch add <path>'.\n";
+            m_sessionRepo.clearMonitorPid();
+            return 1;
+        }
 
-    FileWatcher watcher(paths, [&](const std::string& path) {
-        processFile(fs::path(path), sigs, sigVersion, sessionId, counters);
-    });
-    watcher.start();
-    return 0;
+        std::vector<std::string> paths;
+        for (const auto& wp : watchPaths)
+            paths.push_back(wp.path);
+
+        FileWatcher watcher(paths, [&](const std::string& path) {
+            processFile(fs::path(path), sigs, sigVersion, sessionId, counters);
+        });
+        watcher.start();  // returns when SIGUSR1 fires
+        m_logger.info("Monitor reloading watch paths");
+    }
 }
 
 

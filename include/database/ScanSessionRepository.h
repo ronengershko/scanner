@@ -32,6 +32,10 @@ public:
     std::string getScanRoot() const;
     void setScanRoot(const std::string& path);
 
+    int64_t getMonitorPid() const;
+    void setMonitorPid(int64_t pid);
+    void clearMonitorPid();
+
 private:
     Database& m_db;
     std::optional<ScanSession> findByStatus(const std::string& status) const;

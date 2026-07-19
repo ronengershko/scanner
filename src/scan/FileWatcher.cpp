@@ -1,8 +1,15 @@
 #include "scan/FileWatcher.h"
+#include <csignal>
 #include <filesystem>
 #include <iostream>
 
 namespace fs = std::filesystem;
+
+static volatile sig_atomic_t g_reload = 0;
+
+static void sigusr1Handler(int) {
+    g_reload = 1;
+}
 
 void FileWatcher::fsCallback(ConstFSEventStreamRef, void* ctx,
                               size_t count, void* paths,
@@ -53,8 +60,15 @@ void FileWatcher::start() {
 
     FSEventStreamScheduleWithRunLoop(m_stream, CFRunLoopGetCurrent(), kCFRunLoopDefaultMode);
     FSEventStreamStart(m_stream);
+
     for (const auto& p : m_paths)
         std::cout << "Monitoring: " << p << "\n";
     std::cout << "(Ctrl+C to stop)\n";
-    CFRunLoopRun();
+
+    signal(SIGUSR1, sigusr1Handler);
+    g_reload = 0;
+
+    // Run in 1-second ticks so we can check the reload flag
+    while (!g_reload)
+        CFRunLoopRunInMode(kCFRunLoopDefaultMode, 1.0, false);
 }

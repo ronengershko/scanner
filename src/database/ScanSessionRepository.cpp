@@ -127,6 +127,34 @@ void ScanSessionRepository::setScanRoot(const std::string& path) {
         throw std::runtime_error(sqlite3_errmsg(m_db.handle()));
 }
 
+int64_t ScanSessionRepository::getMonitorPid() const {
+    Stmt stmt;
+    check(sqlite3_prepare_v2(m_db.handle(),
+        "SELECT value FROM scanner_metadata WHERE key = 'monitor_pid'",
+        -1, &stmt.ptr, nullptr), m_db.handle());
+    if (sqlite3_step(stmt.ptr) != SQLITE_ROW) return 0;
+    return std::stoll(reinterpret_cast<const char*>(sqlite3_column_text(stmt.ptr, 0)));
+}
+
+void ScanSessionRepository::setMonitorPid(int64_t pid) {
+    Stmt stmt;
+    check(sqlite3_prepare_v2(m_db.handle(),
+        "INSERT OR REPLACE INTO scanner_metadata (key, value) VALUES ('monitor_pid', ?)",
+        -1, &stmt.ptr, nullptr), m_db.handle());
+    std::string val = std::to_string(pid);
+    sqlite3_bind_text(stmt.ptr, 1, val.c_str(), -1, SQLITE_TRANSIENT);
+    if (sqlite3_step(stmt.ptr) != SQLITE_DONE)
+        throw std::runtime_error(sqlite3_errmsg(m_db.handle()));
+}
+
+void ScanSessionRepository::clearMonitorPid() {
+    Stmt stmt;
+    check(sqlite3_prepare_v2(m_db.handle(),
+        "DELETE FROM scanner_metadata WHERE key = 'monitor_pid'",
+        -1, &stmt.ptr, nullptr), m_db.handle());
+    sqlite3_step(stmt.ptr);
+}
+
 
 std::string ScanSessionRepository::getStatus(int64_t id) const {
     Stmt stmt;

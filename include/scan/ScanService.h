@@ -41,6 +41,7 @@ private:
     };
 
     int runScan(const std::filesystem::path& path, const std::string& scanType);
+    void notifyMonitor();
 
     void processFile(const std::filesystem::path& file,
                      const std::vector<Signature>& sigs,
