@@ -5,6 +5,7 @@
 #include "database/QuarantineRepository.h"
 #include "database/ScanSessionRepository.h"
 #include "database/SignatureRepository.h"
+#include "database/WatchPathRepository.h"
 #include "exclusions/ExclusionService.h"
 #include "logging/Logger.h"
 #include "quarantine/QuarantineService.h"
@@ -29,6 +30,7 @@ struct TestEnv {
     CacheRepository cacheRepo;
     QuarantineRepository quarantineRepo;
     ExclusionRepository exclusionRepo;
+    WatchPathRepository watchPathRepo;
     SignatureService sigService;
     QuarantineService quarantineService;
     ExclusionService exclusionService;
@@ -49,12 +51,13 @@ struct TestEnv {
         , db(dir / "scanner.db")
         , logger(dir / "scanner.log")
         , sigRepo(db), sessionRepo(db), cacheRepo(db)
-        , quarantineRepo(db), exclusionRepo(db)
+        , quarantineRepo(db), exclusionRepo(db), watchPathRepo(db)
         , sigService(sigRepo, logger)
         , quarantineService(quarantineRepo, logger, dir / "quarantine")
         , exclusionService(exclusionRepo, logger)
         , scanService(traverser, fileScanner, metaProvider, sessionRepo,
-                      sigService, cacheRepo, quarantineService, exclusionService, logger)
+                      sigService, cacheRepo, quarantineService, exclusionService,
+                      watchPathRepo, logger)
     {
         db.initializeSchema();
     }
