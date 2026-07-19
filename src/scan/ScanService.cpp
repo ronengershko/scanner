@@ -2,20 +2,12 @@
 #include "database/CacheRepository.h"
 #include "exclusions/ExclusionService.h"
 #include <chrono>
-#include <cstdlib>
 #include <filesystem>
 #include <iomanip>
 #include <iostream>
 #include <stdexcept>
-#include <thread>
 
 namespace fs = std::filesystem;
-
-// Set SCANNER_FILE_DELAY_MS=<ms> to slow scanning for stop/resume testing.
-static int fileDelayMs() {
-    const char* v = std::getenv("SCANNER_FILE_DELAY_MS");
-    return v ? std::stoi(v) : 0;
-}
 
 static std::string verdictStr(Verdict v) {
     switch (v) {
@@ -37,6 +29,7 @@ ScanService::ScanService(FileTraverser& traverser, FileScanner& scanner,
       m_sessionRepo(sessionRepo), m_signatureService(signatureService),
       m_cacheRepo(cacheRepo), m_quarantineService(quarantineService),
       m_exclusionService(exclusionService), m_logger(logger) {}
+
 
 void ScanService::processFile(const fs::path& file,
                                const std::vector<Signature>& sigs,
@@ -129,6 +122,8 @@ void ScanService::processFile(const fs::path& file,
     m_sessionRepo.updateCheckpoint(sessionId, pathStr);
 }
 
+
+
 static void printSummary(bool stopped, const std::string& path,
                          int64_t scanned, int64_t cacheHits,
                          int64_t malicious, int64_t excluded, int64_t errors, double elapsed) {
@@ -141,6 +136,8 @@ static void printSummary(bool stopped, const std::string& path,
               << "Errors: " << errors << "\n"
               << "Duration: " << std::fixed << std::setprecision(1) << elapsed << " seconds\n";
 }
+
+
 
 int ScanService::runScan(const fs::path& path, const std::string& scanType) {
     if (m_sessionRepo.findRunning()) {
@@ -158,8 +155,6 @@ int ScanService::runScan(const fs::path& path, const std::string& scanType) {
     Counters counters;
     auto startTime = std::chrono::steady_clock::now();
     bool stopped = false;
-    int delayMs = fileDelayMs();
-
     try {
         m_traverser.traverse(canonical, [&](const fs::path& file) -> bool {
             if (m_sessionRepo.getStatus(sessionId) == "stop_requested") {
@@ -168,8 +163,6 @@ int ScanService::runScan(const fs::path& path, const std::string& scanType) {
                 return false;
             }
             processFile(file, sigs, sigVersion, sessionId, counters);
-            if (delayMs > 0)
-                std::this_thread::sleep_for(std::chrono::milliseconds(delayMs));
             return true;
         });
 
@@ -195,9 +188,11 @@ int ScanService::runScan(const fs::path& path, const std::string& scanType) {
     return 0;
 }
 
+
 int ScanService::scanPath(const fs::path& path) {
     return runScan(path, "path");
 }
+
 
 int ScanService::scanAll() {
     std::string root = m_sessionRepo.getScanRoot();
@@ -206,12 +201,14 @@ int ScanService::scanAll() {
     return runScan(fs::path(root), "all");
 }
 
+
 void ScanService::setScanRoot(const fs::path& path) {
     fs::path p = fs::weakly_canonical(path);
     m_sessionRepo.setScanRoot(p.string());
     m_logger.info("Scan root set to: " + p.string());
     std::cout << "Scan root: " << p.string() << "\n";
 }
+
 
 int ScanService::requestStop() {
     auto session = m_sessionRepo.findRunning();
@@ -223,6 +220,7 @@ int ScanService::requestStop() {
     std::cout << "Stop requested.\n";
     return 0;
 }
+
 
 int ScanService::resume() {
     if (m_sessionRepo.findRunning()) {
@@ -248,8 +246,6 @@ int ScanService::resume() {
     Counters counters;
     auto startTime = std::chrono::steady_clock::now();
     bool stopped = false;
-    int delayMs = fileDelayMs();
-
     try {
         m_traverser.traverse(fs::path(session->canonicalPath), [&](const fs::path& file) -> bool {
             // Skip files already processed before the checkpoint
@@ -264,8 +260,6 @@ int ScanService::resume() {
             }
 
             processFile(file, sigs, sigVersion, sessionId, counters);
-            if (delayMs > 0)
-                std::this_thread::sleep_for(std::chrono::milliseconds(delayMs));
             return true;
         });
 

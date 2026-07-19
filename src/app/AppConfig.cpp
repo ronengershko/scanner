@@ -14,14 +14,17 @@ AppConfig AppConfig::load() {
     std::filesystem::path projectRoot = executableDirectory().parent_path();
     std::filesystem::path dataRoot = projectRoot / "scanner-data";
 
+    std::filesystem::path dataDir = std::filesystem::weakly_canonical(dataRoot);
     return {
-        dataRoot / "scanner.db",
-        dataRoot / "scanner.log",
-        dataRoot / "quarantine"
+        dataDir,
+        dataDir / "scanner.db",
+        dataDir / "scanner.log",
+        dataDir / "quarantine"
     };
 }
 
-void AppConfig::createRequiredDirectories() const {
+void AppConfig::
+createRequiredDirectories() const {
     std::error_code ec;
     std::filesystem::create_directories(quarantineDirectory, ec);
     if (ec)
