@@ -12,7 +12,6 @@ Application::Application(Logger& logger,
       m_scanService(scanService), m_signatureService(signatureService),
       m_quarantineService(quarantineService), m_exclusionService(exclusionService)
 {
-    m_logger.info("Scanner started");
 }
 
 int Application::run(int argc, char* argv[]) {
