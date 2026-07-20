@@ -32,6 +32,13 @@ scanner quarantine restore <id>
 scanner quarantine delete <id>
 
 scanner config set-root <path>   persist the full-scan root in the DB
+
+scanner watch list               list directories being monitored
+scanner watch add <path>         add a directory to the monitor watch list
+scanner watch remove <id>        remove a watch directory by ID
+scanner monitor                  start real-time file monitor (one instance at a time)
+scanner monitor sessions         show recent monitor session history
+scanner sessions                 show recent scan session history
 ```
 
 ## Architecture
@@ -117,6 +124,21 @@ This project targets macOS and makes several platform-specific choices:
 ## Why there is no default full-scan root
 
 Running `scan --all` without a configured root would scan an uncontrolled path and could quarantine a system file, making the OS or applications unusable. The root must be set explicitly with `config set-root`. Missing root is an error — the scan refuses to run.
+
+## Real-time monitoring
+
+`scanner monitor` watches configured directories for new or modified files and scans them immediately using the macOS [FSEvents API](https://developer.apple.com/documentation/coreservices/file_system_events) (`FSEventStreamCreate` / `CFRunLoop`). This is a native macOS C++ API — no polling, no third-party libraries.
+
+Only one monitor can run at a time. Starting a new monitor automatically kills the previous one (sends SIGTERM). The monitor session (PID, start/stop times) is tracked in the DB and visible via `scanner monitor sessions`.
+
+The monitor starts automatically at login via a LaunchAgent. To add a watch directory:
+
+```bash
+scanner watch add ~/Documents
+scanner watch list
+```
+
+The monitor picks up watch path changes live — no restart needed.
 
 ## Auto-start setup
 

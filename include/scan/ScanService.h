@@ -1,7 +1,7 @@
 #pragma once
 #include "database/CacheRepository.h"
+#include "database/MonitorSessionRepository.h"
 #include "database/ScanSessionRepository.h"
-#include "database/WatchPathRepository.h"
 #include "exclusions/ExclusionService.h"
 #include "logging/Logger.h"
 #include "quarantine/QuarantineService.h"
@@ -22,7 +22,7 @@ public:
                 CacheRepository& cacheRepo,
                 QuarantineService& quarantineService,
                 ExclusionService& exclusionService,
-                WatchPathRepository& watchPathRepo,
+                MonitorSessionRepository& monitorRepo,
                 Logger& logger);
 
     int scanPath(const std::filesystem::path& path);
@@ -34,6 +34,8 @@ public:
     void watchAdd(const std::filesystem::path& path);
     void watchRemove(int64_t id);
     void watchList();
+    void sessionList();
+    void monitorSessionList();
 
 private:
     struct Counters {
@@ -49,14 +51,14 @@ private:
                      int64_t sessionId,
                      Counters& counters);
 
-    FileTraverser&         m_traverser;
-    FileScanner&           m_scanner;
-    FileMetadataProvider&  m_metaProvider;
-    ScanSessionRepository& m_sessionRepo;
-    SignatureService&      m_signatureService;
-    CacheRepository&       m_cacheRepo;
-    QuarantineService&     m_quarantineService;
-    ExclusionService&      m_exclusionService;
-    WatchPathRepository&   m_watchPathRepo;
-    Logger&                m_logger;
+    FileTraverser&              m_traverser;
+    FileScanner&                m_scanner;
+    FileMetadataProvider&       m_metaProvider;
+    ScanSessionRepository&      m_sessionRepo;
+    SignatureService&            m_signatureService;
+    CacheRepository&            m_cacheRepo;
+    QuarantineService&          m_quarantineService;
+    ExclusionService&           m_exclusionService;
+    MonitorSessionRepository&   m_monitorRepo;
+    Logger&                     m_logger;
 };

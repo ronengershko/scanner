@@ -27,12 +27,12 @@ ScanService::ScanService(FileTraverser& traverser, FileScanner& scanner,
                          CacheRepository& cacheRepo,
                          QuarantineService& quarantineService,
                          ExclusionService& exclusionService,
-                         WatchPathRepository& watchPathRepo,
+                         MonitorSessionRepository& monitorRepo,
                          Logger& logger)
     : m_traverser(traverser), m_scanner(scanner), m_metaProvider(metaProvider),
       m_sessionRepo(sessionRepo), m_signatureService(signatureService),
       m_cacheRepo(cacheRepo), m_quarantineService(quarantineService),
-      m_exclusionService(exclusionService), m_watchPathRepo(watchPathRepo),
+      m_exclusionService(exclusionService), m_monitorRepo(monitorRepo),
       m_logger(logger) {}
 
 
@@ -58,7 +58,6 @@ void ScanService::processFile(const fs::path& file,
 
     std::string pathStr = meta.normalizedPath.string();
 
-    // Cache check
     auto cached = m_cacheRepo.lookup(pathStr);
     if (cached && CacheRepository::isValidHit(*cached, meta, sigVersion)) {
         counters.cacheHits++;
@@ -72,21 +71,19 @@ void ScanService::processFile(const fs::path& file,
                 m_logger.error("Quarantine failed: " + pathStr + ": " + e.what());
             }
         }
-        m_sessionRepo.updateCheckpoint(sessionId, pathStr);
+        if (sessionId > 0)
+            m_sessionRepo.updateCheckpoint(sessionId, pathStr);
         return;
     }
 
-    // Scan
     ScanResult result = m_scanner.scan(file, sigs);
 
-    // Stability check: compare metadata before and after scan
     std::optional<FileMetadata> stableMeta;
     try {
         FileMetadata metaAfter = m_metaProvider.read(file);
         if (m_metaProvider.sameFileState(meta, metaAfter)) {
             stableMeta = meta;
         } else {
-            // File changed during scan — retry once with fresh metadata
             FileMetadata metaBefore2 = m_metaProvider.read(file);
             result = m_scanner.scan(file, sigs);
             FileMetadata metaAfter2 = m_metaProvider.read(file);
@@ -95,7 +92,6 @@ void ScanService::processFile(const fs::path& file,
         }
     } catch (...) {}
 
-    // Cache stable, non-error results
     if (stableMeta && result.verdict != Verdict::Error) {
         m_cacheRepo.upsert({pathStr,
             static_cast<int64_t>(stableMeta->deviceId),
@@ -124,9 +120,9 @@ void ScanService::processFile(const fs::path& file,
         }
     }
 
-    m_sessionRepo.updateCheckpoint(sessionId, pathStr);
+    if (sessionId > 0)
+        m_sessionRepo.updateCheckpoint(sessionId, pathStr);
 }
-
 
 
 static void printSummary(bool stopped, const std::string& path,
@@ -141,7 +137,6 @@ static void printSummary(bool stopped, const std::string& path,
               << "Errors: " << errors << "\n"
               << "Duration: " << std::fixed << std::setprecision(1) << elapsed << " seconds\n";
 }
-
 
 
 int ScanService::runScan(const fs::path& path, const std::string& scanType) {
@@ -198,7 +193,6 @@ int ScanService::scanPath(const fs::path& path) {
     return runScan(path, "path");
 }
 
-
 int ScanService::scanAll() {
     std::string root = m_sessionRepo.getScanRoot();
     if (root.empty())
@@ -217,26 +211,20 @@ void ScanService::setScanRoot(const fs::path& path) {
 
 void ScanService::watchAdd(const fs::path& path) {
     fs::path p = fs::weakly_canonical(path);
-    m_watchPathRepo.add(p.string());
+    m_monitorRepo.addWatchPath(p.string());
     m_logger.info("Watch path added: " + p.string());
     std::cout << "Watch path added: " << p.string() << "\n";
     notifyMonitor();
 }
 
 void ScanService::watchRemove(int64_t id) {
-    m_watchPathRepo.remove(id);
+    m_monitorRepo.removeWatchPath(id);
     std::cout << "Watch path removed.\n";
     notifyMonitor();
 }
 
-void ScanService::notifyMonitor() {
-    int64_t pid = m_sessionRepo.getMonitorPid();
-    if (pid > 0 && kill(static_cast<pid_t>(pid), SIGUSR1) == 0)
-        std::cout << "Monitor reloaded.\n";
-}
-
 void ScanService::watchList() {
-    auto paths = m_watchPathRepo.loadAll();
+    auto paths = m_monitorRepo.loadAllWatchPaths();
     if (paths.empty()) {
         std::cout << "No watch paths configured.\n";
         return;
@@ -246,21 +234,34 @@ void ScanService::watchList() {
         std::cout << wp.id << "   " << wp.path << "\n";
 }
 
+void ScanService::notifyMonitor() {
+    auto running = m_monitorRepo.findRunning();
+    if (running && kill(static_cast<pid_t>(running->pid), SIGUSR1) == 0)
+        std::cout << "Monitor reloaded.\n";
+}
+
 
 int ScanService::monitor() {
-    m_sessionRepo.setMonitorPid(static_cast<int64_t>(getpid()));
+    // Kill any existing monitor
+    auto existing = m_monitorRepo.findRunning();
+    if (existing) {
+        if (kill(static_cast<pid_t>(existing->pid), 0) == 0)
+            kill(static_cast<pid_t>(existing->pid), SIGTERM);
+        m_monitorRepo.updateStatus(existing->id, "stopped");
+    }
+
+    int64_t sessionId = m_monitorRepo.create(static_cast<int64_t>(getpid()));
     m_logger.info("Monitor started pid=" + std::to_string(getpid()));
 
     auto sigs = m_signatureService.loadForScanning();
     int64_t sigVersion = m_signatureService.getVersion();
-    int64_t sessionId = m_sessionRepo.create("monitor", "monitor", "monitor");
     Counters counters;
 
     while (true) {
-        auto watchPaths = m_watchPathRepo.loadAll();
+        auto watchPaths = m_monitorRepo.loadAllWatchPaths();
         if (watchPaths.empty()) {
             std::cerr << "No watch paths set. Use 'scanner watch add <path>'.\n";
-            m_sessionRepo.clearMonitorPid();
+            m_monitorRepo.updateStatus(sessionId, "stopped");
             return 1;
         }
 
@@ -269,11 +270,17 @@ int ScanService::monitor() {
             paths.push_back(wp.path);
 
         FileWatcher watcher(paths, [&](const std::string& path) {
-            processFile(fs::path(path), sigs, sigVersion, sessionId, counters);
+            processFile(fs::path(path), sigs, sigVersion, 0, counters);
         });
-        watcher.start();  // returns when SIGUSR1 fires
+
+        bool reload = watcher.start();
+        if (!reload) break;
         m_logger.info("Monitor reloading watch paths");
     }
+
+    m_monitorRepo.updateStatus(sessionId, "stopped");
+    m_logger.info("Monitor stopped");
+    return 0;
 }
 
 
@@ -315,7 +322,6 @@ int ScanService::resume() {
     bool stopped = false;
     try {
         m_traverser.traverse(fs::path(session->canonicalPath), [&](const fs::path& file) -> bool {
-            // Skip files already processed before the checkpoint
             fs::path filePath = fs::weakly_canonical(file);
             if (!checkpoint.empty() && filePath <= fs::path(checkpoint))
                 return true;
@@ -349,4 +355,38 @@ int ScanService::resume() {
     m_logger.info(std::string(stopped ? "Scan stopped" : "Scan completed") +
                   " (resumed) scanned=" + std::to_string(counters.scanned));
     return 0;
+}
+
+
+void ScanService::sessionList() {
+    auto sessions = m_sessionRepo.listRecent(10);
+    if (sessions.empty()) {
+        std::cout << "No scan sessions.\n";
+        return;
+    }
+    std::cout << "ID   Type  Status     Scanned  Malicious  Path\n";
+    for (const auto& s : sessions) {
+        std::cout << s.id << "    "
+                  << s.scanType << "  "
+                  << s.status << "  "
+                  << s.scannedFiles << "  "
+                  << s.maliciousFiles << "  "
+                  << s.canonicalPath << "\n";
+    }
+}
+
+void ScanService::monitorSessionList() {
+    auto sessions = m_monitorRepo.listRecent(10);
+    if (sessions.empty()) {
+        std::cout << "No monitor sessions.\n";
+        return;
+    }
+    std::cout << "ID   PID    Status   Started              Stopped\n";
+    for (const auto& s : sessions) {
+        std::cout << s.id << "    "
+                  << s.pid << "  "
+                  << s.status << "  "
+                  << s.startedAt << "  "
+                  << s.stoppedAt << "\n";
+    }
 }

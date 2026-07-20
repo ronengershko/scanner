@@ -29,7 +29,7 @@ add_library(scanner_lib
     src/database/CacheRepository.cpp
     src/database/ExclusionRepository.cpp
     src/database/QuarantineRepository.cpp
-    src/database/WatchPathRepository.cpp
+    src/database/MonitorSessionRepository.cpp
     src/scan/FileScanner.cpp
     src/scan/FileTraverser.cpp
     src/scan/FileMetadataProvider.cpp

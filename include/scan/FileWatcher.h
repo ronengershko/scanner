@@ -10,7 +10,7 @@ class FileWatcher {
 public:
     FileWatcher(const std::vector<std::string>& paths, FileChangedCallback cb);
     ~FileWatcher();
-    void start();  // blocks until process exits
+    bool start();  // returns true=reload (SIGUSR1), false=shutdown (SIGTERM/SIGINT)
 
 private:
     static void fsCallback(ConstFSEventStreamRef, void* ctx,

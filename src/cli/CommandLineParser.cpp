@@ -21,7 +21,9 @@ static const char* USAGE =
     "  scanner watch list\n"
     "  scanner watch add <path>\n"
     "  scanner watch remove <id>\n"
-    "  scanner monitor\n";
+    "  scanner monitor\n"
+    "  scanner monitor sessions\n"
+    "  scanner sessions\n";
 
 Command CommandLineParser::parse(int argc, char* argv[]) const {
     if (argc < 2)
@@ -139,9 +141,17 @@ Command CommandLineParser::parse(int argc, char* argv[]) const {
     }
 
     if (cmd == "monitor") {
+        if (argc == 2)
+            return {CommandType::Monitor, std::nullopt};
+        if (argc == 3 && std::string(argv[2]) == "sessions")
+            return {CommandType::MonitorSessionList, std::nullopt};
+        throw std::invalid_argument("'monitor' takes no arguments or 'sessions'.");
+    }
+
+    if (cmd == "sessions") {
         if (argc != 2)
-            throw std::invalid_argument("'monitor' takes no arguments.");
-        return {CommandType::Monitor, std::nullopt};
+            throw std::invalid_argument("'sessions' takes no arguments.");
+        return {CommandType::SessionList, std::nullopt};
     }
 
     if (cmd == "watch") {

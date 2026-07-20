@@ -104,6 +104,16 @@ void Database::initializeSchema() {
     )");
 
     execute(R"(
+        CREATE TABLE IF NOT EXISTS monitor_sessions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            status TEXT NOT NULL,
+            pid INTEGER NOT NULL,
+            started_at TEXT NOT NULL,
+            stopped_at TEXT
+        )
+    )");
+
+    execute(R"(
         CREATE TABLE IF NOT EXISTS quarantine_items (
             id TEXT PRIMARY KEY,
             quarantine_path TEXT NOT NULL UNIQUE,

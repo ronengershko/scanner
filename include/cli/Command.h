@@ -20,7 +20,9 @@ enum class CommandType {
     WatchList,
     WatchAdd,
     WatchRemove,
-    Monitor
+    Monitor,
+    SessionList,
+    MonitorSessionList
 };
 
 struct Command {

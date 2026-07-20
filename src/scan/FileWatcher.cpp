@@ -6,10 +6,10 @@
 namespace fs = std::filesystem;
 
 static volatile sig_atomic_t g_reload = 0;
+static volatile sig_atomic_t g_shutdown = 0;
 
-static void sigusr1Handler(int) {
-    g_reload = 1;
-}
+static void sigusr1Handler(int) { g_reload = 1; }
+static void shutdownHandler(int) { g_shutdown = 1; }
 
 void FileWatcher::fsCallback(ConstFSEventStreamRef, void* ctx,
                               size_t count, void* paths,
@@ -35,7 +35,7 @@ FileWatcher::~FileWatcher() {
     }
 }
 
-void FileWatcher::start() {
+bool FileWatcher::start() {
     std::vector<CFStringRef> cfStrings;
     cfStrings.reserve(m_paths.size());
     for (const auto& p : m_paths)
@@ -66,9 +66,14 @@ void FileWatcher::start() {
     std::cout << "(Ctrl+C to stop)\n";
 
     signal(SIGUSR1, sigusr1Handler);
+    signal(SIGTERM, shutdownHandler);
+    signal(SIGINT,  shutdownHandler);
+    signal(SIGHUP,  shutdownHandler);
     g_reload = 0;
+    g_shutdown = 0;
 
-    // Run in 1-second ticks so we can check the reload flag
-    while (!g_reload)
+    while (!g_reload && !g_shutdown)
         CFRunLoopRunInMode(kCFRunLoopDefaultMode, 1.0, false);
+
+    return !g_shutdown;
 }

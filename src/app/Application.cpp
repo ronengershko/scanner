@@ -85,6 +85,12 @@ int Application::run(int argc, char* argv[]) {
                 break;
             case CommandType::Monitor:
                 return m_scanService.monitor();
+            case CommandType::SessionList:
+                m_scanService.sessionList();
+                break;
+            case CommandType::MonitorSessionList:
+                m_scanService.monitorSessionList();
+                break;
         }
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << "\n";
