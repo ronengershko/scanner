@@ -49,13 +49,15 @@ Strict layered design: CLI → Services → Repositories → Platform.
 main.cpp                         constructs all objects, calls app.run()
   └── Application                parses CLI, dispatches to services
         ├── ScanService          traversal, caching, quarantine decisions
+        │                        also owns monitor lifecycle and watch paths
         ├── SignatureService      load/add/remove signatures
         ├── ExclusionService      isExcluded checks, add/remove exclusions
         └── QuarantineService     move files to quarantine, restore, delete
 
 Repositories (database/)         all SQL lives here
   ├── SignatureRepository
-  ├── ScanSessionRepository       also owns scan_root config
+  ├── ScanSessionRepository       scan sessions + scan_root config
+  ├── MonitorSessionRepository    monitor sessions + watch_paths table
   ├── CacheRepository
   ├── ExclusionRepository
   └── QuarantineRepository
@@ -63,7 +65,17 @@ Repositories (database/)         all SQL lives here
 Platform layer
   ├── FileTraverser               recursive alphabetical walk, skips symlinks
   ├── FileScanner                 chunk-based binary search across signatures
-  └── FileMetadataProvider        wraps stat() — returns inode, device, size, mtime
+  ├── FileMetadataProvider        wraps stat() — returns inode, device, size, mtime
+  └── FileWatcher                 wraps macOS FSEvents API — fires callback on file change
+
+Database tables
+  ├── scan_sessions               one row per scan run (path/all), with checkpoint + counters
+  ├── monitor_sessions            one row per monitor run (pid, status, start/stop times)
+  ├── watch_paths                 directories the monitor watches
+  ├── file_cache                  per-file verdict cache keyed by path + metadata
+  ├── signatures                  hex byte patterns to match against
+  ├── exclusions                  paths/directories skipped during scan
+  └── quarantine_items            files moved to quarantine/
 ```
 
 ## What happens when a file is scanned
