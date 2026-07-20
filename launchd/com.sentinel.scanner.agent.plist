@@ -9,11 +9,13 @@
     <key>ProgramArguments</key>
     <array>
         <string>/Users/ronen/projects/scanner/build/scanner</string>
-        <string>scan</string>
-        <string>--all</string>
+        <string>monitor</string>
     </array>
 
     <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
     <true/>
 
     <key>StandardOutPath</key>

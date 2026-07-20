@@ -1,5 +1,6 @@
 #pragma once
 #include "database/CacheRepository.h"
+#include "database/MonitorSessionRepository.h"
 #include "database/ScanSessionRepository.h"
 #include "exclusions/ExclusionService.h"
 #include "logging/Logger.h"
@@ -21,13 +22,20 @@ public:
                 CacheRepository& cacheRepo,
                 QuarantineService& quarantineService,
                 ExclusionService& exclusionService,
+                MonitorSessionRepository& monitorRepo,
                 Logger& logger);
 
     int scanPath(const std::filesystem::path& path);
     int scanAll();
     int requestStop();
     int resume();
+    int monitor();
     void setScanRoot(const std::filesystem::path& path);
+    void watchAdd(const std::filesystem::path& path);
+    void watchRemove(int64_t id);
+    void watchList();
+    void sessionList();
+    void monitorSessionList();
 
 private:
     struct Counters {
@@ -35,6 +43,7 @@ private:
     };
 
     int runScan(const std::filesystem::path& path, const std::string& scanType);
+    void notifyMonitor();
 
     void processFile(const std::filesystem::path& file,
                      const std::vector<Signature>& sigs,
@@ -42,13 +51,14 @@ private:
                      int64_t sessionId,
                      Counters& counters);
 
-    FileTraverser&         m_traverser;
-    FileScanner&           m_scanner;
-    FileMetadataProvider&  m_metaProvider;
-    ScanSessionRepository& m_sessionRepo;
-    SignatureService&      m_signatureService;
-    CacheRepository&       m_cacheRepo;
-    QuarantineService&     m_quarantineService;
-    ExclusionService&      m_exclusionService;
-    Logger&                m_logger;
+    FileTraverser&              m_traverser;
+    FileScanner&                m_scanner;
+    FileMetadataProvider&       m_metaProvider;
+    ScanSessionRepository&      m_sessionRepo;
+    SignatureService&            m_signatureService;
+    CacheRepository&            m_cacheRepo;
+    QuarantineService&          m_quarantineService;
+    ExclusionService&           m_exclusionService;
+    MonitorSessionRepository&   m_monitorRepo;
+    Logger&                     m_logger;
 };

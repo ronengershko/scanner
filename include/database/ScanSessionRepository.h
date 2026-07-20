@@ -2,6 +2,7 @@
 #include "database/Database.h"
 #include <optional>
 #include <string>
+#include <vector>
 
 struct ScanSession {
     int64_t id;
@@ -10,6 +11,16 @@ struct ScanSession {
     std::string scanType;
     std::string status;
     std::string lastCompletedPath;
+};
+
+struct ScanSessionSummary {
+    int64_t id;
+    std::string canonicalPath;
+    std::string scanType;
+    std::string status;
+    std::string createdAt;
+    int64_t scannedFiles;
+    int64_t maliciousFiles;
 };
 
 class ScanSessionRepository {
@@ -31,6 +42,8 @@ public:
 
     std::string getScanRoot() const;
     void setScanRoot(const std::string& path);
+
+    std::vector<ScanSessionSummary> listRecent(int n) const;
 
 private:
     Database& m_db;

@@ -3,6 +3,7 @@
 #include "database/CacheRepository.h"
 #include "database/Database.h"
 #include "database/ExclusionRepository.h"
+#include "database/MonitorSessionRepository.h"
 #include "database/QuarantineRepository.h"
 #include "database/ScanSessionRepository.h"
 #include "database/SignatureRepository.h"
@@ -25,11 +26,12 @@ int main(int argc, char* argv[]) {
         Database database(config.databasePath);
         database.initializeSchema();
 
-        SignatureRepository   signatureRepo(database);
-        ScanSessionRepository sessionRepo(database);
-        CacheRepository       cacheRepo(database);
-        QuarantineRepository  quarantineRepo(database);
-        ExclusionRepository   exclusionRepo(database);
+        SignatureRepository      signatureRepo(database);
+        ScanSessionRepository    sessionRepo(database);
+        CacheRepository          cacheRepo(database);
+        QuarantineRepository     quarantineRepo(database);
+        ExclusionRepository      exclusionRepo(database);
+        MonitorSessionRepository monitorRepo(database);
 
         exclusionRepo.seedIfMissing(config.dataDirectory.string(), true);
 
@@ -43,7 +45,7 @@ int main(int argc, char* argv[]) {
 
         ScanService scanService(traverser, scanner, metaProvider,
                                 sessionRepo, signatureService, cacheRepo,
-                                quarantineService, exclusionService, logger);
+                                quarantineService, exclusionService, monitorRepo, logger);
 
         Application app(logger, scanService, signatureService,
                         quarantineService, exclusionService);

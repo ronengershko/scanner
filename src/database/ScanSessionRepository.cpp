@@ -140,3 +140,28 @@ std::string ScanSessionRepository::getStatus(int64_t id) const {
 
     return reinterpret_cast<const char*>(sqlite3_column_text(stmt.ptr, 0));
 }
+
+std::vector<ScanSessionSummary> ScanSessionRepository::listRecent(int n) const {
+    Stmt stmt;
+    check(sqlite3_prepare_v2(m_db.handle(),
+        "SELECT id, canonical_path, scan_type, status, created_at,"
+        " scanned_files, malicious_files"
+        " FROM scan_sessions ORDER BY id DESC LIMIT ?",
+        -1, &stmt.ptr, nullptr), m_db.handle());
+
+    sqlite3_bind_int(stmt.ptr, 1, n);
+
+    std::vector<ScanSessionSummary> result;
+    while (sqlite3_step(stmt.ptr) == SQLITE_ROW) {
+        result.push_back({
+            sqlite3_column_int64(stmt.ptr, 0),
+            reinterpret_cast<const char*>(sqlite3_column_text(stmt.ptr, 1)),
+            reinterpret_cast<const char*>(sqlite3_column_text(stmt.ptr, 2)),
+            reinterpret_cast<const char*>(sqlite3_column_text(stmt.ptr, 3)),
+            reinterpret_cast<const char*>(sqlite3_column_text(stmt.ptr, 4)),
+            sqlite3_column_int64(stmt.ptr, 5),
+            sqlite3_column_int64(stmt.ptr, 6)
+        });
+    }
+    return result;
+}
