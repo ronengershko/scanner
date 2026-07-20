@@ -2,6 +2,7 @@
 #include <csignal>
 #include <filesystem>
 #include <iostream>
+#include <unistd.h>
 
 namespace fs = std::filesystem;
 
@@ -61,9 +62,11 @@ bool FileWatcher::start() {
     FSEventStreamScheduleWithRunLoop(m_stream, CFRunLoopGetCurrent(), kCFRunLoopDefaultMode);
     FSEventStreamStart(m_stream);
 
-    for (const auto& p : m_paths)
-        std::cout << "Monitoring: " << p << "\n";
-    std::cout << "(Ctrl+C to stop)\n";
+    if (isatty(STDOUT_FILENO)) {
+        for (const auto& p : m_paths)
+            std::cout << "Monitoring: " << p << "\n";
+        std::cout << "(Ctrl+C to stop)\n";
+    }
 
     signal(SIGUSR1, sigusr1Handler);
     signal(SIGTERM, shutdownHandler);

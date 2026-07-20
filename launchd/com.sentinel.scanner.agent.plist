@@ -8,7 +8,7 @@
 
     <key>ProgramArguments</key>
     <array>
-        <string>/Users/ronen/projects/scanner/build/scanner</string>
+        <string>__SCANNER_DIR__/build/scanner</string>
         <string>monitor</string>
     </array>
 
@@ -19,9 +19,9 @@
     <true/>
 
     <key>StandardOutPath</key>
-    <string>/Users/ronen/projects/scanner/scanner-data/scanner.log</string>
+    <string>__SCANNER_DIR__/scanner-data/scanner.log</string>
 
     <key>StandardErrorPath</key>
-    <string>/Users/ronen/projects/scanner/scanner-data/scanner.log</string>
+    <string>__SCANNER_DIR__/scanner-data/scanner.log</string>
 </dict>
 </plist>
