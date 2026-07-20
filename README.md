@@ -5,6 +5,10 @@ A command-line malware scanner for macOS, written in C++17 with SQLite for persi
 ## Build
 
 ```bash
+# Quick build + auto-install launchd agents
+./build.sh
+
+# Or manually
 cmake -B build -S .
 cmake --build build
 ./build/scanner <command>
@@ -131,7 +135,7 @@ This project targets macOS and makes several platform-specific choices:
 | File identity | `st_dev + st_ino` from `stat()` | Same | File index from `GetFileInformationByHandle()`, or path-only |
 | Auto-start at boot | `launchd` LaunchDaemon plist | `systemd` unit file | Windows Service or Task Scheduler |
 | Auto-start at login | `launchd` LaunchAgent plist | `systemd --user` or `.bashrc` | Task Scheduler (on logon trigger) |
-| Protected dirs | TCC / Full Disk Access | `chmod` / capability | ACLs |
+
 
 ## Why there is no default full-scan root
 
@@ -139,7 +143,7 @@ Running `scan --all` without a configured root would scan an uncontrolled path a
 
 ## Real-time monitoring
 
-`scanner monitor` watches configured directories for new or modified files and scans them immediately using the macOS [FSEvents API](https://developer.apple.com/documentation/coreservices/file_system_events) (`FSEventStreamCreate` / `CFRunLoop`). This is a native macOS C++ API — no polling, no third-party libraries.
+`scanner monitor` watches configured directories for new or modified files and scans them immediately using the macOS [FSEvents API](https://developer.apple.com/documentation/coreservices/file_system_events) (`FSEventStreamCreate` / `CFRunLoop`). 
 
 Only one monitor can run at a time. Starting a new monitor automatically kills the previous one (sends SIGTERM). The monitor session (PID, start/stop times) is tracked in the DB and visible via `scanner monitor sessions`.
 
@@ -154,24 +158,12 @@ The monitor picks up watch path changes live — no restart needed.
 
 ## Auto-start setup
 
-> **Note:** The plist files in `launchd/` contain a hardcoded path (`/Users/ronen/projects/scanner`). Before loading them, update that path to match your machine:
-> ```bash
-> sed -i '' 's|/Users/ronen/projects/scanner|/path/to/your/scanner|g' \
->     launchd/com.sentinel.scanner.agent.plist \
->     launchd/com.sentinel.scanner.daemon.plist
-> ```
+The plist files use `__SCANNER_DIR__` as a placeholder. `build.sh` automatically replaces it with the correct path and installs both plists — no manual editing needed.
 
 ```bash
-# Set what to scan
+# Set what to scan, then run the build script
 ./build/scanner config set-root /path/to/scan
-
-# LaunchAgent — runs at user login
-cp launchd/com.sentinel.scanner.agent.plist ~/Library/LaunchAgents/
-launchctl load ~/Library/LaunchAgents/com.sentinel.scanner.agent.plist
-
-# LaunchDaemon — runs at OS boot, as root (requires sudo)
-sudo cp launchd/com.sentinel.scanner.daemon.plist /Library/LaunchDaemons/
-sudo launchctl load /Library/LaunchDaemons/com.sentinel.scanner.daemon.plist
+./build.sh
 ```
 
 ## Tests
