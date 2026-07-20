@@ -364,13 +364,20 @@ void ScanService::sessionList() {
         std::cout << "No scan sessions.\n";
         return;
     }
-    std::cout << "ID   Type  Status     Scanned  Malicious  Path\n";
+    std::cout << std::left
+              << std::setw(5)  << "ID"
+              << std::setw(7)  << "Type"
+              << std::setw(13) << "Status"
+              << std::setw(10) << "Scanned"
+              << std::setw(11) << "Malicious"
+              << "Path\n";
     for (const auto& s : sessions) {
-        std::cout << s.id << "    "
-                  << s.scanType << "  "
-                  << s.status << "  "
-                  << s.scannedFiles << "  "
-                  << s.maliciousFiles << "  "
+        std::cout << std::left
+                  << std::setw(5)  << s.id
+                  << std::setw(7)  << s.scanType
+                  << std::setw(13) << s.status
+                  << std::setw(10) << s.scannedFiles
+                  << std::setw(11) << s.maliciousFiles
                   << s.canonicalPath << "\n";
     }
 }
@@ -381,12 +388,18 @@ void ScanService::monitorSessionList() {
         std::cout << "No monitor sessions.\n";
         return;
     }
-    std::cout << "ID   PID    Status   Started              Stopped\n";
+    std::cout << std::left
+              << std::setw(5)  << "ID"
+              << std::setw(8)  << "PID"
+              << std::setw(10) << "Status"
+              << std::setw(22) << "Started"
+              << "Stopped\n";
     for (const auto& s : sessions) {
-        std::cout << s.id << "    "
-                  << s.pid << "  "
-                  << s.status << "  "
-                  << s.startedAt << "  "
+        std::cout << std::left
+                  << std::setw(5)  << s.id
+                  << std::setw(8)  << s.pid
+                  << std::setw(10) << s.status
+                  << std::setw(22) << s.startedAt
                   << s.stoppedAt << "\n";
     }
 }
