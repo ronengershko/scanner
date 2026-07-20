@@ -154,6 +154,13 @@ The monitor picks up watch path changes live — no restart needed.
 
 ## Auto-start setup
 
+> **Note:** The plist files in `launchd/` contain a hardcoded path (`/Users/ronen/projects/scanner`). Before loading them, update that path to match your machine:
+> ```bash
+> sed -i '' 's|/Users/ronen/projects/scanner|/path/to/your/scanner|g' \
+>     launchd/com.sentinel.scanner.agent.plist \
+>     launchd/com.sentinel.scanner.daemon.plist
+> ```
+
 ```bash
 # Set what to scan
 ./build/scanner config set-root /path/to/scan
